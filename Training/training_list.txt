@@ -1,0 +1,5 @@
+4
+../Training/1.jpg ../Training/1_t.jpg
+../Training/2.jpg ../Training/2_t.jpg
+../Training/3.jpg ../Training/3_t.jpg
+../Training/4.jpg ../Training/4_t.jpg

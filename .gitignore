@@ -1,0 +1,7 @@
+*.o
+*.exe
+*~
+*.dt
+*.sim
+dynamic_test
+field_trees
