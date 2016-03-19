@@ -12,3 +12,8 @@ Usage for run  : ./HorizonLineDetector 1 file_path_in file_path_out <br/>
        		  file_path_in will be a list file in the case of training and a video file path in the case of running<br/>
 		  file_path_out video file path<br/>
 		  training_file will config file output in the case of training and will determine the file to use when running<br/>
+
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=HG2LBKFSUjk
+" target="_blank"><img src="http://img.youtube.com/vi/HG2LBKFSUjk/0.jpg" 
+alt="Example" width="240" height="180" border="10" /></a>
