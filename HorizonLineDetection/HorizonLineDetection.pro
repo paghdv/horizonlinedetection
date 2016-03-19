@@ -13,23 +13,20 @@ CONFIG   += console
 CONFIG   -= app_bundle
 CONFIG   += c++11
 
-CPPFLAGS = -L/path/to/opencv3.0.0/lib \
-           -I/path/to/opencv3.0.0/include
-
-INCLUDEPATH += -I/home/paghdv/opencv/opencv-3.1.0/bin/include
+INCLUDEPATH += /home/paghdv/opencv/opencv-3.1.0/install/include/
 
 TEMPLATE = app
 
-
-LIBS += -L/home/paghdv/opencv/opencv-3.1.0/bin/lib \
-        -lopencv_core \
-        -lopencv_imgproc \
-        -lopencv_highgui \
-        -lopencv_features2d \
-        -lopencv_calib3d \
-        -lopencv_nonfree \
-        -lopencv_video \
-        -lopencv_ml \
+LIBS += -L/home/paghdv/opencv/opencv-3.1.0/install/lib -lopencv_core \
+        -L/home/paghdv/opencv/opencv-3.1.0/install/lib -lopencv_imgproc \
+        -L/home/paghdv/opencv/opencv-3.1.0/install/lib -lopencv_highgui \
+        -L/home/paghdv/opencv/opencv-3.1.0/install/lib -lopencv_features2d \
+        -L/home/paghdv/opencv/opencv-3.1.0/install/lib -lopencv_calib3d \
+        -L/home/paghdv/opencv/opencv-3.1.0/install/lib -lopencv_xfeatures2d \
+        -L/home/paghdv/opencv/opencv-3.1.0/install/lib -lopencv_video \
+        -L/home/paghdv/opencv/opencv-3.1.0/install/lib -lopencv_videoio \
+        -L/home/paghdv/opencv/opencv-3.1.0/install/lib -lopencv_ml \
+        -L/home/paghdv/opencv/opencv-3.1.0/install/lib -lopencv_imgcodecs \
 
 SOURCES += main.cpp \
     ../src/HorizonLineDetector.cpp

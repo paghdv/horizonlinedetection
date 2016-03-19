@@ -1,6 +1,5 @@
 #include "../src/HorizonLineDetector.h"
 #include <iostream>
-#include <opencv2/highgui/highgui.hpp>
 
 int main(int argc, char *argv[])
 {
@@ -19,7 +18,6 @@ int main(int argc, char *argv[])
     if (is_run)
     {
         //Test
-        //cv::Mat test_frame=cv::imread(file_path_in);
         cv::Mat mask;
         if (!file_path_mask.empty())
             mask=cv::imread(file_path_mask);
@@ -27,18 +25,11 @@ int main(int argc, char *argv[])
             std::cout<<"Using mask"<<std::endl;
         hld.init_detector("../Training/saved_model.svm");
         hld.detect_video(file_path_in,file_path_out,mask);
-        /*
-        hld.detect_image(test_frame);
-        hld.draw_horizon();
-        hld.save_draw_frame(file_path_out);
-        hld.draw_edges();
-        hld.save_draw_frame("candidates.png");
-        */
     }
     else
     {
         hld.train(file_path_in);
-        hld.save_model("../Training/saved_model.svm");
+        hld.save_model(file_path_out);
     }
 
 }

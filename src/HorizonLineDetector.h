@@ -1,6 +1,8 @@
-#include <opencv2/core/core.hpp>
-#include <opencv2/ml/ml.hpp>
-#include <opencv2/features2d/features2d.hpp>
+#include "opencv2/core.hpp"
+#include "opencv2/ml.hpp"
+#include "opencv2/features2d.hpp"
+#include "opencv2/xfeatures2d.hpp"
+#include "opencv2/imgcodecs.hpp"
 
 #include <unistd.h>
 #include <iostream>
@@ -44,12 +46,13 @@ class HorizonLineDetector
         bool dp(std::shared_ptr<Node> n);
         void reset_dp();
         void add_node_to_horizon(std::shared_ptr<Node> n);
-        cv::OrbDescriptorExtractor extractor;
+        cv::Ptr<cv::xfeatures2d::SiftDescriptorExtractor> extractor;
+        //cv::OrbDescriptorExtractor extractor;
         std::vector<cv::KeyPoint> current_keypoints;
         cv::Mat current_frame,current_edges, current_edges_list,current_draw;
         cv::Mat trainingDataMat, labelsMat,descriptorsMat;
-        CvSVM svm;
-        CvSVMParams params;
+
+        cv::Ptr<cv::ml::SVM> svm;
         std::vector<bool> valid_edges;
         bool load_model(const std::string config_file);
         int max_lost_steps=10;
