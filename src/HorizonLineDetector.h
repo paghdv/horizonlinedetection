@@ -1,6 +1,8 @@
-#include <opencv2/core/core.hpp>
-#include <opencv2/ml/ml.hpp>
-#include <opencv2/features2d/features2d.hpp>
+#include "opencv2/core.hpp"
+#include "opencv2/ml.hpp"
+#include "opencv2/features2d.hpp"
+#include "opencv2/xfeatures2d.hpp"
+#include "opencv2/imgcodecs.hpp"
 
 #include <unistd.h>
 #include <iostream>
@@ -30,7 +32,7 @@ class HorizonLineDetector
 {
 	private:
 		//Simple edge computation
-        void compute_edges(const cv::Mat &mask=cv::Mat(), const int lowThreshold=40);
+        void compute_edges(const cv::Mat &mask=cv::Mat());
 		//Dynamic programming path solver
 		void compute_dp_paths();
 		//Compute features on edge locations
@@ -44,12 +46,13 @@ class HorizonLineDetector
         bool dp(std::shared_ptr<Node> n);
         void reset_dp();
         void add_node_to_horizon(std::shared_ptr<Node> n);
-        cv::OrbDescriptorExtractor extractor;
+        cv::Ptr<cv::DescriptorExtractor> extractor;
+        //cv::OrbDescriptorExtractor extractor;
         std::vector<cv::KeyPoint> current_keypoints;
         cv::Mat current_frame,current_edges, current_edges_list,current_draw;
         cv::Mat trainingDataMat, labelsMat,descriptorsMat;
-        CvSVM svm;
-        CvSVMParams params;
+        int canny_param=30;
+        cv::Ptr<cv::ml::SVM> svm;
         std::vector<bool> valid_edges;
         bool load_model(const std::string config_file);
         int max_lost_steps=10;
@@ -73,6 +76,12 @@ class HorizonLineDetector
         int get_max_lost_steps(){return max_lost_steps;}
         void draw_horizon();
         void draw_edges();
+        int get_cany_param(){return canny_param;}
+        //A low canny_param will detect many edges therefore the HL will take longer to compute.
+        //A high value might miss some of the edges in the image
+        void set_canny_param(const int cp){canny_param=cp;}
+        int get_max_search_steps(){return max_lost_steps;}
+        void set_max_search_steps(const int mss){max_lost_steps=mss;}
 		//Detect horizon line in image
         void detect_image(const cv::Mat &frame, const cv::Mat &mask=cv::Mat());
 		//Detect horizon file in video

@@ -16,4 +16,9 @@ Usage for run  : ./HorizonLineDetector 1 file_path_in file_path_out <br/>
 
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=HG2LBKFSUjk
 " target="_blank"><img src="http://img.youtube.com/vi/HG2LBKFSUjk/0.jpg" 
+alt="Example" width="240" height="180" border="10" /></a> <a href="http://www.youtube.com/watch?feature=player_embedded&v=6PyR47v7BmY
+" target="_blank"><img src="http://img.youtube.com/vi/6PyR47v7BmY/0.jpg" 
 alt="Example" width="240" height="180" border="10" /></a>
+
+
+

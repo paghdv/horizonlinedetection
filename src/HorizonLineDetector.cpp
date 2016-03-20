@@ -1,15 +1,23 @@
 #include "HorizonLineDetector.h"
 #include <fstream>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/video/video.hpp>
-#include <opencv2/features2d/features2d.hpp>
+#include "opencv2/imgproc.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/video.hpp"
+#include "opencv2/videoio.hpp"
+#include "opencv2/features2d.hpp"
+
 
 HorizonLineDetector::HorizonLineDetector()
 {
-    params.svm_type    = CvSVM::C_SVC;
-    params.kernel_type = CvSVM::LINEAR;
-    params.term_crit   = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
+
+    extractor = cv::xfeatures2d::SiftDescriptorExtractor::create();
+
+    svm =  cv::ml::SVM::create();
+    svm->setType(cv::ml::SVM::C_SVC);
+    svm->setKernel(cv::ml::SVM::RBF);
+
+    svm->setTermCriteria(cv::TermCriteria(CV_TERMCRIT_ITER,1000,1e-6));
+
     first_node = std::make_shared<Node>();
     first_node->cost=0;
     first_node->prev=nullptr;
@@ -160,18 +168,17 @@ bool HorizonLineDetector::compute_cheapest_path(const cv::Mat &mask)
     reset_dp();
 }
 
-void HorizonLineDetector::compute_edges(const cv::Mat &mask,const int lowThreshold)
+void HorizonLineDetector::compute_edges(const cv::Mat &mask)
 {
     int ratio = 3;
     int kernel_size = 3;
     cv::GaussianBlur(current_frame, current_edges, cv::Size(7,7), 1.5, 1.5);
 
-    cv::Canny( current_edges, current_edges, lowThreshold, lowThreshold*ratio, kernel_size );
+    cv::Canny( current_edges, current_edges, canny_param, canny_param*ratio, kernel_size );
 
     if (!mask.empty())
         current_edges=current_edges.mul(mask);
 
-    cv::imwrite("edges.png",current_edges);
     find_edge_list();
 }
 
@@ -179,7 +186,7 @@ void HorizonLineDetector::compute_descriptors()
 {
     cv::Mat descriptorsMat_;
 
-    extractor.compute(current_frame, current_keypoints, descriptorsMat_ );
+    extractor->compute(current_frame, current_keypoints, descriptorsMat_ );
     descriptorsMat_.convertTo(descriptorsMat,CV_32F);
 }
 
@@ -196,7 +203,7 @@ bool HorizonLineDetector::train(const std::string training_list_file)
         return false;
     inpt>>n;
     cv::Mat mask,mask2;
-
+    canny_param=20;
     for (int i=0;i<n;i++)
     {
         cv::Mat temp_labels_pos,temp_labels_neg;
@@ -210,31 +217,26 @@ bool HorizonLineDetector::train(const std::string training_list_file)
         mask2=255-mask;
         //Compute edges
         compute_edges(mask);
-        //current_edges=mask;
-        //find_edge_list();
         compute_descriptors();
         //Copy the matrix of descriptors
-        //trainingDataMat
         trainingDataMat.push_back(descriptorsMat);
-        temp_labels_pos=cv::Mat::ones(descriptorsMat.rows,1,CV_32FC1);
+        temp_labels_pos=cv::Mat::ones(descriptorsMat.rows,1,CV_32SC1);
         labelsMat.push_back(temp_labels_pos);
         //Set all as positive labels
         //labelsMat
 
-        compute_edges(mask2,20);
-        imwrite("mask2.jpg",mask2);
-        //current_edges=255-mask;
-        //find_edge_list();
+        compute_edges(mask2);
         compute_descriptors();
         //Concatenate features matrix
         trainingDataMat.push_back(descriptorsMat);
-        temp_labels_neg=-cv::Mat::ones(descriptorsMat.rows,1,CV_32FC1);
+        temp_labels_neg=-cv::Mat::ones(descriptorsMat.rows,1,CV_32SC1);
         labelsMat.push_back(temp_labels_neg);
 
     }
 
     //Train SVM
-    svm.train_auto(trainingDataMat,labelsMat,cv::Mat(), cv::Mat(), params);
+    cv::Ptr<cv::ml::TrainData> tData = cv::ml::TrainData::create(trainingDataMat, cv::ml::SampleTypes::ROW_SAMPLE, labelsMat);
+    svm->trainAuto(tData);
 
 	return true;
 }
@@ -246,12 +248,13 @@ bool HorizonLineDetector::init_detector(const std::string training_config_file)
 
 bool HorizonLineDetector::save_model(const std::string config_file)
 {
-    svm.save(config_file.c_str());
+    svm->save(config_file);
 	return true;
 }
 bool HorizonLineDetector::load_model(const std::string config_file)
 {
-    svm.load(config_file.c_str());
+    //svm->loadFromString(config_file);
+    svm=cv::ml::SVM::load<cv::ml::SVM>(config_file);
     return true;
 }
 void HorizonLineDetector::detect_image(const cv::Mat &frame,const cv::Mat &mask)
@@ -265,18 +268,16 @@ void HorizonLineDetector::detect_image(const cv::Mat &frame,const cv::Mat &mask)
 		cvtColor(frame, current_frame, CV_BGR2GRAY);
     else
         current_frame=frame;
-    compute_edges(mask,10);
+    compute_edges(mask);
     compute_descriptors();
     valid_edges.resize(current_keypoints.size());
-    int val;
     cv::threshold(current_edges,current_edges,1,1,CV_8U);
     for (size_t i=0;i<valid_edges.size();i++)
     {
-        valid_edges[i]= svm.predict(descriptorsMat.row(i))==1;
+        valid_edges[i]= svm->predict(descriptorsMat.row(i))==1;
         if (valid_edges[i])
             current_edges.at<char>(current_keypoints[i].pt.y,current_keypoints[i].pt.x)=2;
     }
-    //cv::imwrite("edges2.png",current_edges);
     compute_cheapest_path(mask);
 }
 bool HorizonLineDetector::detect_video(const std::string video_file,const std::string video_file_out,const cv::Mat &mask_)
@@ -298,10 +299,10 @@ bool HorizonLineDetector::detect_video(const std::string video_file,const std::s
 
     cv::Size S = cv::Size((int) cap.get(CV_CAP_PROP_FRAME_WIDTH),    // Acquire input size
                       (int) cap.get(CV_CAP_PROP_FRAME_HEIGHT));
-    //int ex = static_cast<int>(cap.get(CV_CAP_PROP_FOURCC));
-    int ex = CV_FOURCC('X','V','I','D');
+    int ex = static_cast<int>(cap.get(CV_CAP_PROP_FOURCC));
+    //int ex = CV_FOURCC('X','V','I','D');
     //int ex = CV_FOURCC('X','2','6','4');
-    //cv::VideoWriter wrt(video_file_out, ex, cap.get(CV_CAP_PROP_FPS), S,false);
+    //cv::VideoWriter wrt(video_file_out, ex, cap.get(CV_CAP_PROP_FPS), S,true);
     int i=0;
 	for(;;)
 	{
@@ -361,18 +362,6 @@ void HorizonLineDetector::reset_dp()
 
 void HorizonLineDetector::delete_nodes()
 {
-    /*
-    for (size_t i=0;i<n->next.size();i++)
-        delete_nodes(n->next[i]);
-
-    n->next.clear();
-    n->prev=nullptr;
-    */
-    /*
-    for (std::list<std::shared_ptr<Node> >::iterator it=nlist.begin(); it != nlist.end(); ++it)
-        it->get()->prev=nullptr;
-    nlist.clear();
-    */
     last_node->prev=nullptr;
     ntree.clear();
 }
