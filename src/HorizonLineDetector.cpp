@@ -4,6 +4,7 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/video.hpp"
 #include "opencv2/videoio.hpp"
+#include "opencv2/features2d.hpp"
 
 
 HorizonLineDetector::HorizonLineDetector()
@@ -13,6 +14,7 @@ HorizonLineDetector::HorizonLineDetector()
     params.kernel_type = CvSVM::LINEAR;
     params.term_crit   = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
 */
+
     extractor = cv::xfeatures2d::SiftDescriptorExtractor::create();
     svm =  cv::ml::SVM::create();
     svm->setType(cv::ml::SVM::C_SVC);
@@ -20,7 +22,7 @@ HorizonLineDetector::HorizonLineDetector()
     svm->setGamma(3);
 
     //svm->setGamma(3);
-    svm->setTermCriteria(cv::TermCriteria(CV_TERMCRIT_ITER,1e5,1e-6));
+    svm->setTermCriteria(cv::TermCriteria(CV_TERMCRIT_ITER,1000,1e-6));
 
     first_node = std::make_shared<Node>();
     first_node->cost=0;
@@ -183,7 +185,6 @@ void HorizonLineDetector::compute_edges(const cv::Mat &mask,const int lowThresho
     if (!mask.empty())
         current_edges=current_edges.mul(mask);
 
-    cv::imwrite("edges.png",current_edges);
     find_edge_list();
 }
 
@@ -222,11 +223,8 @@ bool HorizonLineDetector::train(const std::string training_list_file)
         mask2=255-mask;
         //Compute edges
         compute_edges(mask);
-        //current_edges=mask;
-        //find_edge_list();
         compute_descriptors();
         //Copy the matrix of descriptors
-        //trainingDataMat
         trainingDataMat.push_back(descriptorsMat);
         temp_labels_pos=cv::Mat::ones(descriptorsMat.rows,1,CV_32SC1);
         labelsMat.push_back(temp_labels_pos);
@@ -234,9 +232,6 @@ bool HorizonLineDetector::train(const std::string training_list_file)
         //labelsMat
 
         compute_edges(mask2,20);
-        imwrite("mask2.jpg",mask2);
-        //current_edges=255-mask;
-        //find_edge_list();
         compute_descriptors();
         //Concatenate features matrix
         trainingDataMat.push_back(descriptorsMat);
@@ -289,7 +284,6 @@ void HorizonLineDetector::detect_image(const cv::Mat &frame,const cv::Mat &mask)
         if (valid_edges[i])
             current_edges.at<char>(current_keypoints[i].pt.y,current_keypoints[i].pt.x)=2;
     }
-    //cv::imwrite("edges2.png",current_edges);
     compute_cheapest_path(mask);
 }
 bool HorizonLineDetector::detect_video(const std::string video_file,const std::string video_file_out,const cv::Mat &mask_)
@@ -314,7 +308,7 @@ bool HorizonLineDetector::detect_video(const std::string video_file,const std::s
     int ex = static_cast<int>(cap.get(CV_CAP_PROP_FOURCC));
     //int ex = CV_FOURCC('X','V','I','D');
     //int ex = CV_FOURCC('X','2','6','4');
-    cv::VideoWriter wrt(video_file_out, ex, cap.get(CV_CAP_PROP_FPS), S,false);
+    //cv::VideoWriter wrt(video_file_out, ex, cap.get(CV_CAP_PROP_FPS), S,true);
     int i=0;
 	for(;;)
 	{
@@ -322,11 +316,11 @@ bool HorizonLineDetector::detect_video(const std::string video_file,const std::s
 		cap >> frame; // get a new frame from camera
         detect_image(frame,mask);
         draw_horizon();
-        wrt.write(current_draw);
-        //std::stringstream ss;
-        //ss<<i;
+        //wrt.write(current_draw);
+        std::stringstream ss;
+        ss<<i;
         std::cout<<i<<" "<<std::endl;
-        //save_draw_frame(video_file_out+ss.str()+".png");
+        save_draw_frame(video_file_out+ss.str()+".png");
         i++;
 	}
 
