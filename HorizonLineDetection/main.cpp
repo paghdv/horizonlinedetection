@@ -27,6 +27,8 @@ int main(int argc, char *argv[])
             mask=cv::imread(file_path_mask);
         if (!mask.empty())
             std::cout<<"Using mask"<<std::endl;
+        hld.set_canny_param(40);
+        hld.set_max_search_steps(10);
         hld.init_detector(training_file);
         hld.detect_video(file_path_in,file_path_out,mask);
     }

@@ -32,7 +32,7 @@ class HorizonLineDetector
 {
 	private:
 		//Simple edge computation
-        void compute_edges(const cv::Mat &mask=cv::Mat(), const int lowThreshold=40);
+        void compute_edges(const cv::Mat &mask=cv::Mat());
 		//Dynamic programming path solver
 		void compute_dp_paths();
 		//Compute features on edge locations
@@ -46,12 +46,12 @@ class HorizonLineDetector
         bool dp(std::shared_ptr<Node> n);
         void reset_dp();
         void add_node_to_horizon(std::shared_ptr<Node> n);
-        cv::Ptr<cv::xfeatures2d::SiftDescriptorExtractor> extractor;
+        cv::Ptr<cv::DescriptorExtractor> extractor;
         //cv::OrbDescriptorExtractor extractor;
         std::vector<cv::KeyPoint> current_keypoints;
         cv::Mat current_frame,current_edges, current_edges_list,current_draw;
         cv::Mat trainingDataMat, labelsMat,descriptorsMat;
-
+        int canny_param=30;
         cv::Ptr<cv::ml::SVM> svm;
         std::vector<bool> valid_edges;
         bool load_model(const std::string config_file);
@@ -76,6 +76,12 @@ class HorizonLineDetector
         int get_max_lost_steps(){return max_lost_steps;}
         void draw_horizon();
         void draw_edges();
+        int get_cany_param(){return canny_param;}
+        //A low canny_param will detect many edges therefore the HL will take longer to compute.
+        //A high value might miss some of the edges in the image
+        void set_canny_param(const int cp){canny_param=cp;}
+        int get_max_search_steps(){return max_lost_steps;}
+        void set_max_search_steps(const int mss){max_lost_steps=mss;}
 		//Detect horizon line in image
         void detect_image(const cv::Mat &frame, const cv::Mat &mask=cv::Mat());
 		//Detect horizon file in video

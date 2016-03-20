@@ -9,19 +9,13 @@
 
 HorizonLineDetector::HorizonLineDetector()
 {
-    /*
-    params.svm_type    = CvSVM::C_SVC;
-    params.kernel_type = CvSVM::LINEAR;
-    params.term_crit   = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
-*/
 
     extractor = cv::xfeatures2d::SiftDescriptorExtractor::create();
+
     svm =  cv::ml::SVM::create();
     svm->setType(cv::ml::SVM::C_SVC);
     svm->setKernel(cv::ml::SVM::RBF);
-    svm->setGamma(3);
 
-    //svm->setGamma(3);
     svm->setTermCriteria(cv::TermCriteria(CV_TERMCRIT_ITER,1000,1e-6));
 
     first_node = std::make_shared<Node>();
@@ -174,13 +168,13 @@ bool HorizonLineDetector::compute_cheapest_path(const cv::Mat &mask)
     reset_dp();
 }
 
-void HorizonLineDetector::compute_edges(const cv::Mat &mask,const int lowThreshold)
+void HorizonLineDetector::compute_edges(const cv::Mat &mask)
 {
     int ratio = 3;
     int kernel_size = 3;
     cv::GaussianBlur(current_frame, current_edges, cv::Size(7,7), 1.5, 1.5);
 
-    cv::Canny( current_edges, current_edges, lowThreshold, lowThreshold*ratio, kernel_size );
+    cv::Canny( current_edges, current_edges, canny_param, canny_param*ratio, kernel_size );
 
     if (!mask.empty())
         current_edges=current_edges.mul(mask);
@@ -209,7 +203,7 @@ bool HorizonLineDetector::train(const std::string training_list_file)
         return false;
     inpt>>n;
     cv::Mat mask,mask2;
-
+    canny_param=20;
     for (int i=0;i<n;i++)
     {
         cv::Mat temp_labels_pos,temp_labels_neg;
@@ -231,7 +225,7 @@ bool HorizonLineDetector::train(const std::string training_list_file)
         //Set all as positive labels
         //labelsMat
 
-        compute_edges(mask2,20);
+        compute_edges(mask2);
         compute_descriptors();
         //Concatenate features matrix
         trainingDataMat.push_back(descriptorsMat);
@@ -274,7 +268,7 @@ void HorizonLineDetector::detect_image(const cv::Mat &frame,const cv::Mat &mask)
 		cvtColor(frame, current_frame, CV_BGR2GRAY);
     else
         current_frame=frame;
-    compute_edges(mask,10);
+    compute_edges(mask);
     compute_descriptors();
     valid_edges.resize(current_keypoints.size());
     cv::threshold(current_edges,current_edges,1,1,CV_8U);
