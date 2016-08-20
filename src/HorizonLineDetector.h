@@ -24,13 +24,24 @@ class Node
         int cost;               //Total cost until now
         int lost;               //Number of steps taken without a clear path
         int x,y;
-        Node& operator=(const Node &n1){x=n1.x;y=n1.y;cost=n1.cost;lost=n1.lost;prev=n1.prev;}//next=n1.next;}
-        Node& operator=(Node &&n1){x=n1.x;y=n1.y;cost=n1.cost;lost=n1.lost;prev=n1.prev;n1.prev=nullptr;}//next=n1.next;n1.next.clear();}
+        Node& operator=(const Node &n1){x=n1.x;y=n1.y;cost=n1.cost;lost=n1.lost;prev=n1.prev; return *this;}//next=n1.next;}
+        Node& operator=(Node &&n1){x=n1.x;y=n1.y;cost=n1.cost;lost=n1.lost;prev=n1.prev;n1.prev=nullptr;return *this;}//next=n1.next;n1.next.clear();}
 };
 
 class HorizonLineDetector
 {
 	private:
+        int max_lost_steps = 25;
+        int lost_step_cost = 5;//Was 5
+        int max_cost = 2;
+
+        bool constraining_y_start = false;
+        float y_start = 0;
+        float y_variation = 100000;
+        int reset_y_constraint_condition = 3;
+
+        int canny_param = 30;
+
 		//Simple edge computation
         void compute_edges(const cv::Mat &mask=cv::Mat());
 		//Dynamic programming path solver
@@ -46,23 +57,23 @@ class HorizonLineDetector
         bool dp(std::shared_ptr<Node> n);
         void reset_dp();
         void add_node_to_horizon(std::shared_ptr<Node> n);
+        bool check_y_starts(const std::vector<float> &y_starts);
         cv::Ptr<cv::DescriptorExtractor> extractor;
         //cv::OrbDescriptorExtractor extractor;
         std::vector<cv::KeyPoint> current_keypoints;
         cv::Mat current_frame,current_edges, current_edges_list,current_draw;
         cv::Mat trainingDataMat, labelsMat,descriptorsMat;
-        int canny_param=30;
+
         cv::Ptr<cv::ml::SVM> svm;
         std::vector<bool> valid_edges;
         bool load_model(const std::string config_file);
-        int max_lost_steps=10;
+
         std::shared_ptr<Node> first_node, last_node;
         cv::Mat_<int> visited;
         std::vector<cv::Point2i> horizon;
         std::multimap<int,std::shared_ptr<Node>> ntree;                       //Structure to keep track of the leafs (ordered)
         //std::list<std::shared_ptr<Node>> nlist;
-        int lost_step_cost=5;
-        int max_cost=2;
+
 	public:
         HorizonLineDetector();
 		~HorizonLineDetector(){}
